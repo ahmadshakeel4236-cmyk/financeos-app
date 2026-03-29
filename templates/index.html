@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceOS | Personal Wealth Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #f8fafc;
+            --surface:  #ffffff;
+            --border:   #e2e8f0;
+            --accent:   #2563eb;
+            --success:  #059669;
+            --danger:   #dc2626;
+            --warning:  #d97706;
+            --text:     #0f172a;
+            --muted:    #64748b;
+            --ai-bg:    #0f172a;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ── Header ── */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+        .logo span { color: var(--accent); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .badge { font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 99px; }
+        .badge-blue  { background: #eff6ff; color: var(--accent); border: 1px solid #dbeafe; }
+        .badge-green { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
+
+        /* ── Layout ── */
+        .main { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+        /* ── KPI Row ── */
+        .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; border-top: 3px solid var(--border); }
+        .kpi.blue   { border-top-color: var(--accent); }
+        .kpi.green  { border-top-color: var(--success); }
+        .kpi.red    { border-top-color: var(--danger); }
+        .kpi.yellow { border-top-color: var(--warning); }
+        .kpi.purple { border-top-color: #7c3aed; }
+        .kpi-label { font-size: 0.72rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+        .kpi-value { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+        .kpi-sub   { font-size: 0.7rem; margin-top: 4px; color: var(--muted); }
+
+        /* ── Grid ── */
+        .grid { display: grid; grid-template-columns: 300px 1fr 360px; gap: 1.5rem; align-items: start; }
+
+        /* ── Card ── */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+        .card-title { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+        .card-title svg { width: 15px; height: 15px; color: var(--muted); }
+
+        /* ── Form ── */
+        label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; margin-top: 10px; }
+        label:first-child { margin-top: 0; }
+        input[type="number"], input[type="date"], select, input[type="text"] {
+            width: 100%; padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.85rem; font-family: 'Inter', sans-serif;
+            color: var(--text); background: var(--bg);
+            outline: none; transition: border-color 0.15s;
+        }
+        input:focus, select:focus { border-color: var(--accent); background: white; }
+
+        .btn { width: 100%; padding: 0.65rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.82rem; font-family: 'Inter', sans-serif; transition: 0.15s; margin-top: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--muted); }
+        .btn-secondary:hover { background: var(--bg); }
+        .btn-danger { background: #fef2f2; border: 1px solid #fecaca; color: var(--danger); }
+        .btn-danger:hover { background: #fee2e2; }
+
+        .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: #1e293b; color: white;
+            padding: 0.7rem 1.2rem; border-radius: 10px;
+            font-size: 0.82rem; font-weight: 500;
+            opacity: 0; transition: opacity 0.3s; z-index: 999;
+            pointer-events: none;
+        }
+        #toast.show { opacity: 1; }
+
+        /* ── Charts ── */
+        .chart-wrap { position: relative; height: 220px; margin-bottom: 1.25rem; }
+
+        /* ── Table ── */
+        .txn-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .txn-table th { text-align: left; font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+        .txn-table td { padding: 8px; border-bottom: 1px solid #f8fafc; color: var(--text); }
+        .txn-table tr:last-child td { border-bottom: none; }
+        .cat-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 500; }
+        .del-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; }
+        .del-btn:hover { color: var(--danger); background: #fef2f2; }
+
+        /* ── Progress Bar ── */
+        .progress-wrap { margin-top: 6px; }
+        .progress-bar { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+        .progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+
+        /* ── AI Panel ── */
+        .ai-panel {
+            background: var(--ai-bg);
+            border-radius: 14px;
+            display: flex; flex-direction: column;
+            height: 620px; overflow: hidden;
+        }
+        .ai-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .ai-header-left { display: flex; align-items: center; gap: 8px; }
+        .ai-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
+        .ai-title { font-size: 0.85rem; font-weight: 600; color: #f1f5f9; }
+        .ai-sub   { font-size: 0.72rem; color: #64748b; margin-top: 1px; }
+
+        .chat-area { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+        .chat-area::-webkit-scrollbar { width: 4px; }
+        .chat-area::-webkit-scrollbar-track { background: transparent; }
+        .chat-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+
+        .bubble { padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.85rem; line-height: 1.55; max-width: 88%; white-space: pre-wrap; }
+        .ai-bubble   { background: #1e3a5f; color: #bfdbfe; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user-bubble { background: rgba(255,255,255,0.07); color: #cbd5e1; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .typing { display: flex; gap: 4px; padding: 12px 16px; }
+        .typing span { width: 6px; height: 6px; background: #475569; border-radius: 50%; animation: bounce 1.2s infinite; }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+        .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 1rem 0.75rem; }
+        .qbtn { font-size: 0.72rem; color: #94a3b8; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 99px; padding: 4px 10px; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.15s; }
+        .qbtn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+        .ai-input-row { padding: 0.9rem 1rem; border-top: 1px solid rgba(255,255,255,0.07); display: flex; gap: 8px; }
+        .ai-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9; padding: 0.65rem 0.9rem; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; outline: none; }
+        .ai-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+        .ai-input::placeholder { color: #475569; }
+        .ai-send { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-size: 1rem; transition: 0.15s; }
+        .ai-send:hover { background: #1d4ed8; }
+
+        /* ── Category Colors ── */
+        .c-food    { background: #eff6ff; color: #1d4ed8; }
+        .c-shop    { background: #f0fdf4; color: #15803d; }
+        .c-trans   { background: #fff7ed; color: #c2410c; }
+        .c-util    { background: #fdf4ff; color: #7e22ce; }
+        .c-med     { background: #fef2f2; color: #b91c1c; }
+        .c-edu     { background: #f0f9ff; color: #0369a1; }
+        .c-ent     { background: #fefce8; color: #a16207; }
+        .c-misc    { background: #f8fafc; color: #475569; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="logo">FINANCE<span>OS</span></div>
+    <div class="header-right">
+        <span class="badge badge-green" id="ai-status">● AI Online</span>
+        <span class="badge badge-blue" id="user-badge">👤 Loading...</span>
+        <a href="/logout" style="font-size:0.78rem;font-weight:600;color:#dc2626;text-decoration:none;padding:5px 12px;border:1px solid #fecaca;border-radius:99px;background:#fef2f2;">Logout</a>
+    </div>
+</header>
+
+<main class="main">
+
+    <!-- KPI Row -->
+    <div class="kpi-row">
+        <div class="kpi blue">
+            <div class="kpi-label">Total Spending</div>
+            <div class="kpi-value" id="kpi-total">PKR 0</div>
+            <div class="kpi-sub" id="kpi-total-sub">No transactions yet</div>
+        </div>
+        <div class="kpi yellow">
+            <div class="kpi-label">Monthly Budget</div>
+            <div class="kpi-value" id="kpi-budget">PKR 50,000</div>
+            <div class="kpi-sub">
+                <div class="progress-wrap">
+                    <div class="progress-bar"><div class="progress-fill" id="budget-progress" style="width:0%;background:#d97706"></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="kpi green">
+            <div class="kpi-label">Savings / Remaining</div>
+            <div class="kpi-value" id="kpi-savings">PKR 50,000</div>
+            <div class="kpi-sub" id="kpi-savings-sub">Within budget</div>
+        </div>
+        <div class="kpi purple">
+            <div class="kpi-label">Next Month Forecast</div>
+            <div class="kpi-value" id="kpi-forecast">PKR 0</div>
+            <div class="kpi-sub">AI prediction</div>
+        </div>
+        <div class="kpi red">
+            <div class="kpi-label">Top Category</div>
+            <div class="kpi-value" id="kpi-top-cat">—</div>
+            <div class="kpi-sub" id="kpi-top-val">No data</div>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid">
+
+        <!-- Left Column -->
+        <div class="col-left">
+
+            <!-- Budget Card -->
+            <div class="card">
+                <div class="card-title">Set Monthly Budget</div>
+                <label>Budget Amount (PKR)</label>
+                <input type="number" id="budget-input" placeholder="e.g. 80000">
+                <button class="btn btn-primary" onclick="saveBudget()">Update Budget</button>
+            </div>
+
+            <!-- Add Transaction -->
+            <div class="card">
+                <div class="card-title">Add Transaction</div>
+                <label>Date</label>
+                <input type="date" id="txn-date">
+                <label>Category</label>
+                <select id="txn-cat">
+                    <option value="Food">🍔 Food & Dining</option>
+                    <option value="Shopping">🛍️ Shopping</option>
+                    <option value="Transport">🚗 Transport</option>
+                    <option value="Utilities">💡 Bills & Utilities</option>
+                    <option value="Medical">🏥 Medical</option>
+                    <option value="Education">📚 Education</option>
+                    <option value="Entertainment">🎬 Entertainment</option>
+                    <option value="Miscellaneous">📦 Miscellaneous</option>
+                </select>
+                <label>Amount (PKR)</label>
+                <input type="number" id="txn-amt" placeholder="e.g. 1500">
+                <button class="btn btn-primary" onclick="addTransaction()">Add Transaction</button>
+
+                <hr class="divider">
+
+                <div class="card-title">Import Bank Statement</div>
+                <label>CSV File (Date, Category, Amount)</label>
+                <input type="file" id="csv-file" accept=".csv" style="font-size:0.8rem; padding:6px; background:white;">
+                <button class="btn btn-secondary" onclick="uploadCSV()" style="margin-top:8px;">Upload CSV</button>
+                <button class="btn btn-danger"    onclick="clearAll()"  style="margin-top:6px;">Clear All Data</button>
+            </div>
+        </div>
+
+        <!-- Center Column -->
+        <div class="col-center">
+
+            <!-- Charts -->
+            <div class="card">
+                <div class="card-title">Spending Distribution</div>
+                <div class="chart-wrap"><canvas id="pie-chart"></canvas></div>
+
+                <div class="card-title" style="margin-top:0.5rem;">Monthly Trend & Forecast</div>
+                <div class="chart-wrap"><canvas id="bar-chart"></canvas></div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="card">
+                <div class="card-title">Recent Transactions</div>
+                <table class="txn-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="txn-body">
+                        <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:1.5rem 0;">No transactions yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Column — AI Panel -->
+        <div class="col-right">
+            <div class="ai-panel">
+                <div class="ai-header">
+                    <div class="ai-header-left">
+                        <div class="ai-dot"></div>
+                        <div>
+                            <div class="ai-title">AI Financial Advisor</div>
+                            <div class="ai-sub">Powered by Groq · Llama 3.3 70B</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-area" id="chat-area">
+                    <div class="bubble ai-bubble">Hello! I'm your AI financial advisor powered by Groq. Add your transactions and I'll give you personalized spending analysis and saving tips. How can I help you today?</div>
+                </div>
+
+                <div class="quick-btns">
+                    <button class="qbtn" onclick="quickAsk('Analyze my spending patterns')">📊 Analyze spending</button>
+                    <button class="qbtn" onclick="quickAsk('How can I save more money?')">💰 Save money tips</button>
+                    <button class="qbtn" onclick="quickAsk('Create a budget plan for me')">📅 Budget plan</button>
+                    <button class="qbtn" onclick="quickAsk('What are my biggest financial risks?')">⚠️ Risk areas</button>
+                </div>
+
+                <div class="ai-input-row">
+                    <input class="ai-input" type="text" id="ai-input" placeholder="Ask about your finances..." onkeydown="if(event.key==='Enter') sendMessage()">
+                    <button class="ai-send" onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showToast(msg, duration=2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function catClass(cat) {
+    const m = { Food:'c-food', Shopping:'c-shop', Transport:'c-trans', Utilities:'c-util', Medical:'c-med', Education:'c-edu', Entertainment:'c-ent' };
+    return m[cat] || 'c-misc';
+}
+
+function formatPKR(val) {
+    return 'PKR ' + Math.round(val).toLocaleString();
+}
+
+// Set today's date as default
+document.getElementById('txn-date').valueAsDate = new Date();
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+let pieChart = null, barChart = null;
+
+function renderCharts(data) {
+    const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0891b2','#65a30d'];
+
+    // Pie chart
+    if (pieChart) pieChart.destroy();
+    const pieCtx = document.getElementById('pie-chart').getContext('2d');
+    pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: data.categories.map(c => c.category),
+            datasets: [{
+                data: data.categories.map(c => c.total),
+                backgroundColor: COLORS,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false, cutout: '65%',
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, padding: 12 } } }
+        }
+    });
+
+    // Bar / line chart
+    if (barChart) barChart.destroy();
+    const barCtx = document.getElementById('bar-chart').getContext('2d');
+    const months = data.monthly.map(m => m.month);
+    const vals   = data.monthly.map(m => m.total);
+
+    barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Spending (PKR)',
+                data: vals,
+                backgroundColor: 'rgba(37,99,235,0.15)',
+                borderColor: '#2563eb',
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: v => 'PKR ' + v.toLocaleString() } }
+            }
+        }
+    });
+}
+
+// ── Load Dashboard ────────────────────────────────────────────────────────────
+async function loadDashboard() {
+    const res  = await fetch('/get_chart_data');
+    const data = await res.json();
+
+    const total   = data.total   || 0;
+    const budget  = data.budget  || 50000;
+    const savings = budget - total;
+    const pct     = Math.min((total / budget) * 100, 100);
+
+    document.getElementById('kpi-total').textContent    = formatPKR(total);
+    document.getElementById('kpi-total-sub').textContent = data.categories.length + ' categories';
+    document.getElementById('kpi-budget').textContent   = formatPKR(budget);
+    document.getElementById('kpi-forecast').textContent = formatPKR(data.forecast || 0);
+
+    // Savings
+    const savEl  = document.getElementById('kpi-savings');
+    const savSub = document.getElementById('kpi-savings-sub');
+    savEl.textContent  = formatPKR(Math.abs(savings));
+    savEl.style.color  = savings >= 0 ? '#059669' : '#dc2626';
+    savSub.textContent = savings >= 0 ? 'Within budget ✓' : 'Over budget!';
+
+    // Progress bar
+    const bar = document.getElementById('budget-progress');
+    bar.style.width      = pct + '%';
+    bar.style.background = pct > 90 ? '#dc2626' : pct > 70 ? '#d97706' : '#059669';
+
+    // Top category
+    if (data.categories.length > 0) {
+        const top = data.categories[0];
+        document.getElementById('kpi-top-cat').textContent = top.category;
+        document.getElementById('kpi-top-val').textContent = formatPKR(top.total);
+    }
+
+    // Charts
+    if (data.categories.length > 0) renderCharts(data);
+
+    // Transactions table
+    const tbody = document.getElementById('txn-body');
+    if (data.transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:1.5rem 0;">No transactions yet</td></tr>';
+    } else {
+        tbody.innerHTML = data.transactions.map(t => `
+            <tr>
+                <td style="color:#64748b">${t.date}</td>
+                <td><span class="cat-pill ${catClass(t.category)}">${t.category}</span></td>
+                <td style="font-weight:500">PKR ${Math.round(t.amount).toLocaleString()}</td>
+                <td><button class="del-btn" onclick="deleteTransaction(${t.id})">✕</button></td>
+            </tr>
+        `).join('');
+    }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function saveBudget() {
+    const val = document.getElementById('budget-input').value;
+    if (!val || val <= 0) return showToast('⚠️ Enter a valid budget amount');
+    await fetch('/set_budget', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({amount: val}) });
+    showToast('✅ Budget updated!');
+    document.getElementById('budget-input').value = '';
+    loadDashboard();
+}
+
+async function addTransaction() {
+    const date = document.getElementById('txn-date').value;
+    const cat  = document.getElementById('txn-cat').value;
+    const amt  = document.getElementById('txn-amt').value;
+    if (!date || !amt || amt <= 0) return showToast('⚠️ Please fill all fields');
+    const res  = await fetch('/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({date, category:cat, amount:amt}) });
+    const data = await res.json();
+    if (data.status === 'success') {
+        showToast('✅ Transaction added!');
+        document.getElementById('txn-amt').value = '';
+        loadDashboard();
+    } else {
+        showToast('❌ Error: ' + data.message);
+    }
+}
+
+async function deleteTransaction(id) {
+    await fetch('/delete/' + id, { method: 'DELETE' });
+    showToast('🗑️ Transaction deleted');
+    loadDashboard();
+}
+
+async function uploadCSV() {
+    const file = document.getElementById('csv-file').files[0];
+    if (!file) return showToast('⚠️ Please select a CSV file first');
+    const formData = new FormData();
+    formData.append('file', file);
+    showToast('⏳ Importing...');
+    const res  = await fetch('/upload', { method:'POST', body: formData });
+    const data = await res.json();
+    if (data.status === 'success') {
+        showToast(`✅ Imported ${data.imported} transactions!`);
+        loadDashboard();
+    } else {
+        showToast('❌ ' + data.message);
+    }
+}
+
+async function clearAll() {
+    if (!confirm('Delete ALL transactions? This cannot be undone.')) return;
+    await fetch('/clear', { method: 'POST' });
+    showToast('🗑️ All data cleared');
+    loadDashboard();
+}
+
+// ── AI Chat ───────────────────────────────────────────────────────────────────
+function addBubble(text, role) {
+    const area = document.getElementById('chat-area');
+    const div  = document.createElement('div');
+    div.className = 'bubble ' + (role === 'user' ? 'user-bubble' : 'ai-bubble');
+    div.textContent = text;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+    return div;
+}
+
+function addTyping() {
+    const area = document.getElementById('chat-area');
+    const div  = document.createElement('div');
+    div.className = 'bubble ai-bubble typing';
+    div.id = 'typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+}
+
+function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+}
+
+async function sendMessage() {
+    const input = document.getElementById('ai-input');
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    addBubble(q, 'user');
+    addTyping();
+    try {
+        const res  = await fetch('/ask_ai', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query: q}) });
+        const data = await res.json();
+        removeTyping();
+        addBubble(data.reply, 'ai');
+    } catch (e) {
+        removeTyping();
+        addBubble('Sorry, something went wrong. Please try again.', 'ai');
+    }
+}
+
+function quickAsk(q) {
+    document.getElementById('ai-input').value = q;
+    sendMessage();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.onload = async function() {
+    const res  = await fetch('/me');
+    const data = await res.json();
+    if (data.name) document.getElementById('user-badge').textContent = '👤 ' + data.name;
+    loadDashboard();
+};
+</script>
+
+</body>
+</html>
