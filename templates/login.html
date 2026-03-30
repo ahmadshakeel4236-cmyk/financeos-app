@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceOS | Login</title>
+    <title>FinanceOS | Personal Finance Dashboard & AI Advisor</title>
+    <meta name="description" content="FinanceOS is a free AI-powered personal finance dashboard. Track spending, set budgets, get AI financial advice and forecast expenses.">
+    <meta name="keywords" content="finance dashboard, personal finance, budget tracker, AI finance advisor, expense tracker, spending analytics, FinanceOS">
+    <meta name="author" content="FinanceOS">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://financeos-app.vercel.app/">
+    <meta property="og:title" content="FinanceOS | Personal Finance Dashboard">
+    <meta property="og:description" content="Track spending, set budgets and get AI-powered financial advice with FinanceOS.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://financeos-app.vercel.app">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="FinanceOS | Personal Finance Dashboard">
+    <meta name="twitter:description" content="Free AI-powered personal finance tracker and budget planner.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -123,10 +135,21 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Responsive */
+
         @media (max-width: 768px) {
             .page { grid-template-columns: 1fr; }
             .left-panel { display: none; }
+            .right-panel { padding: 2rem 1.5rem; min-height: 100vh; }
+            .auth-box { max-width: 100%; }
         }
+
+        @media (max-width: 480px) {
+            .right-panel { padding: 1.5rem 1rem; }
+            .auth-title { font-size: 1.25rem; }
+            .tab { font-size: 0.8rem; }
+            input { font-size: 0.85rem; }
+        }
+
     </style>
 </head>
 <body>
