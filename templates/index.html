@@ -166,6 +166,81 @@
         .c-edu     { background: #f0f9ff; color: #0369a1; }
         .c-ent     { background: #fefce8; color: #a16207; }
         .c-misc    { background: #f8fafc; color: #475569; }
+
+        /* ── RESPONSIVE / MOBILE ── */
+        @media (max-width: 1024px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+            .col-right { grid-column: 1 / -1; }
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            /* Header */
+            .header { padding: 0 1rem; height: auto; padding-top: 0.75rem; padding-bottom: 0.75rem; flex-wrap: wrap; gap: 8px; }
+            .header-right { gap: 6px; flex-wrap: wrap; }
+            .badge { font-size: 0.65rem; padding: 3px 8px; }
+            #user-badge { display: none; }
+
+            /* Main padding */
+            .main { padding: 1rem; }
+
+            /* KPI Grid — 2 columns on tablet */
+            .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+            .kpi { padding: 0.85rem 1rem; }
+            .kpi-value { font-size: 1.1rem; }
+
+            /* Main grid — single column */
+            .grid { grid-template-columns: 1fr; gap: 1rem; }
+            .col-left, .col-center, .col-right { width: 100%; }
+
+            /* AI Panel height */
+            .ai-panel { height: 500px; }
+
+            /* Charts smaller */
+            .chart-wrap { height: 180px; }
+
+            /* Table responsive */
+            .txn-table { font-size: 0.75rem; }
+            .txn-table th, .txn-table td { padding: 6px 4px; }
+
+            /* Cards */
+            .card { padding: 1rem; margin-bottom: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            /* Header */
+            .header { padding: 0.6rem 0.85rem; }
+            .logo { font-size: 1rem; }
+
+            /* KPI — 1 column on small phones */
+            .kpi-row { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+            .kpi { padding: 0.75rem; }
+            .kpi-label { font-size: 0.65rem; }
+            .kpi-value { font-size: 1rem; }
+            .kpi-sub { font-size: 0.65rem; }
+
+            /* Main */
+            .main { padding: 0.75rem; }
+
+            /* AI Panel */
+            .ai-panel { height: 450px; }
+            .ai-title { font-size: 0.8rem; }
+            .ai-sub { display: none; }
+            .bubble { font-size: 0.8rem; padding: 0.6rem 0.8rem; }
+            .qbtn { font-size: 0.65rem; padding: 3px 8px; }
+
+            /* Charts */
+            .chart-wrap { height: 160px; }
+
+            /* Buttons */
+            .btn { font-size: 0.8rem; padding: 0.6rem; }
+
+            /* Form inputs */
+            input[type="number"], input[type="date"], select { font-size: 0.82rem; padding: 0.55rem 0.75rem; }
+
+            /* Table — hide date column on very small screens */
+            .txn-table th:first-child, .txn-table td:first-child { display: none; }
+        }
     </style>
 </head>
 <body>
